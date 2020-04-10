@@ -67,15 +67,4 @@ combined = np.concatenate((np.asarray(total), p))
 
 # --------------- take log and re-do analysis --------------
 
-logtotal = np.log(total)
-stepwise_fit_log = pm.auto_arima(logtotal, start_p=1, start_q=1,
-                             max_p=4, max_q=4, max_d=2, m=12,
-                             start_P=0, seasonal=True,
-                             d=1, D=1, trace=True,
-                             error_action='ignore',  # don't want to know if an order does not work
-                             suppress_warnings=True,  # don't want convergence warnings
-                             stepwise=True,  # set to stepwise
-                             maxiter=100)  
-
-stepwise_fit_log.summary()
 
