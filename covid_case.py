@@ -18,7 +18,7 @@ import pmdarima as pm
 from pmdarima.arima import ARIMA
 
 
-filepath = 'C:/Users/hewit/Documents/GitHub/COVID-19/archived_data/archived_time_series/time_series_19-covid-Confirmed_archived_0325.csv'
+filepath = 'C:/Users/hewit/Documents/GitHub/COVID-19/time_series_covid19_deaths_global.csv'
 df = pd.read_csv(filepath)
 
 italy = df.iloc[16,4:]
@@ -26,8 +26,56 @@ italy = df.iloc[16,4:]
 dates = pd.to_datetime(italy.index, format='%m/%d/%y')
 
 ax = plt.gca()
-ax.xaxis.set_major_locator(matplotlib.dates.MonthLocator())
-ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%m'))
-plt.plot(dates, italy, linewidth=0.5)
+ax.xaxis.set_major_locator(matplotlib.dates.DayLocator())
+ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%d/%m'))
+#plt.plot(dates, italy)
+plt.plot(italy)
+plt.xticks
 plt.show() 
+
+#--------------- Predicting Canadian deaths ------------------
+# isolate data pertainig to Canada
+dfc = pd.DataFrame(df[(df['Country/Region']=='Canada')]).reset_index(drop=True)
+ontario = dfc.iloc[7,4:]
+
+ts = dfc.iloc[:,4:] # slice the numerical data into ts (forgo the provinces labels)
+
+total = ts.sum(axis=0) # sum the columns to figure out total deaths in canada across provinces
+
+
+# sarimax arima model fitting
+stepwise_fit = pm.auto_arima(total, start_p=1, start_q=1,
+                             max_p=4, max_q=4, max_d=2, m=12,
+                             start_P=0, seasonal=True,
+                             d=1, D=1, trace=True,
+                             error_action='ignore',  # don't want to know if an order does not work
+                             suppress_warnings=True,  # don't want convergence warnings
+                             stepwise=True,  # set to stepwise
+                             maxiter=100)  
+
+
+
+stepwise_fit.summary() # summarize model
+
+pred = stepwise_fit.predict(n_periods=60, return_conf_int=True, alpha = 0.05) # make the prediction in to the future
+p = pred[0]
+ci = pred[1]
+
+
+combined = np.concatenate((np.asarray(total), p))
+
+
+# --------------- take log and re-do analysis --------------
+
+logtotal = np.log(total)
+stepwise_fit_log = pm.auto_arima(logtotal, start_p=1, start_q=1,
+                             max_p=4, max_q=4, max_d=2, m=12,
+                             start_P=0, seasonal=True,
+                             d=1, D=1, trace=True,
+                             error_action='ignore',  # don't want to know if an order does not work
+                             suppress_warnings=True,  # don't want convergence warnings
+                             stepwise=True,  # set to stepwise
+                             maxiter=100)  
+
+stepwise_fit_log.summary()
 
